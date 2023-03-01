@@ -110,6 +110,10 @@ class MarketAndOption:
 
 
 class VanillaOption:
+    """
+
+    Class for calculating the price of a European plain vanilla call or put option.
+    """
     def __init__(self,
                  market_and_option: MarketAndOption,
                  is_call: bool) -> None:
@@ -126,6 +130,99 @@ class VanillaOption:
             self.payoff = np.maximum(self.mo.mc_paths[-1] - self.mo.k, 0)
         else:
             self.payoff = np.maximum(self.mo.k - self.mo.mc_paths[-1], 0)
+        df = Df(self.mo.r, dt=self.mo.expiry)
+        self.price = df.df * self.payoff.mean()
+
+
+class Lookback:
+    """
+
+    Class for calculating price of a European lookback call/put option with fixed/floating strike.
+    """
+    def __init__(self,
+                 market_and_option: MarketAndOption,
+                 is_call: bool,
+                 is_floating_strike: bool) -> None:
+        """
+
+        Calculate the price of a European lookback call/put option with fixed/floating strike.
+        @param market_and_option: MarketAndOption object.
+        @param is_call: Boolean.
+        @param is_floating_strike: Boolean.
+        """
+
+        self.mo = market_and_option
+        self.is_call = is_call
+        self.is_floating_strike = is_floating_strike
+        self.payoff = None
+
+        # Lookback values for payoff function.
+        s_t = self.mo.mc_paths[-1]
+        s_min = self.mo.mc_paths.min()
+        s_max = self.mo.mc_paths.max()
+
+        # Floating strike.
+        if self.is_floating_strike:
+            # Call option.
+            if self.is_call:
+                self.payoff = np.maximum(s_max - s_t, 0)
+            # Put option.
+            else:
+                self.payoff = np.maximum(s_t - s_min, 0)
+        # Fixed strike.
+        else:
+            # Call option.
+            if self.is_call:
+                self.payoff = np.maximum(s_max - self.mo.k, 0)
+            # Put option.
+            else:
+                self.payoff = np.maximum(self.mo.k - s_min, 0)
+        df = Df(self.mo.r, dt=self.mo.expiry)
+        self.price = df.df * self.payoff.mean()
+
+
+class Asian:
+    """
+
+     Class for calculating price of a European asian call/put option with fixed/floating strike.
+    """
+    def __init__(self,
+                 market_and_option: MarketAndOption,
+                 is_call: bool,
+                 is_floating_strike: bool) -> None:
+        """
+
+        Calculate the price of a European asian call/put option with fixed/floating strike.
+        @param market_and_option: MarketAndOption object.
+        @param is_call: Boolean.
+        @param is_floating_strike: Boolean.
+        """
+
+        self.mo = market_and_option
+        self.is_call = is_call
+        self.is_floating_strike = is_floating_strike
+        self.payoff = None
+
+        # Asian values for payoff function.
+        s_t = self.mo.mc_paths[-1]
+        s_mean = self.mo.mc_paths.mean()
+
+        # Floating strike.
+        if self.is_floating_strike:
+            # Call option.
+            if self.is_call:
+                self.payoff = np.maximum(s_mean - s_t, 0)
+            # Put option.
+            else:
+                self.payoff = np.maximum(s_t - s_mean, 0)
+        # Fixed strike.
+        else:
+            # Call option.
+            if self.is_call:
+                self.payoff = np.maximum(s_mean - self.mo.k, 0)
+            # Put option.
+            else:
+                self.payoff = np.maximum(self.mo.k - s_mean, 0)
         df = Df(self.mo.r, dt=self.mo.expiry)
         self.price = df.df * self.payoff.mean()
 
@@ -152,5 +249,22 @@ if __name__ == '__main__':
     # d.plot_paths()
     vanilla = VanillaOption(market_and_option=d,
                             is_call=False)
-    print(vanilla.mo.mc_paths[-1].mean())
-    print(vanilla.price)
+    # print(vanilla.price)
+
+    lookback = Lookback(market_and_option=d,
+                        is_call=True,
+                        is_floating_strike=True)
+    print(lookback.price)
+    lookback = Lookback(market_and_option=d,
+                        is_call=False,
+                        is_floating_strike=True)
+    print(lookback.price)
+
+    asian = Asian(market_and_option=d,
+                  is_call=True,
+                  is_floating_strike=True)
+    print(asian.price)
+    asian = Asian(market_and_option=d,
+                  is_call=False,
+                  is_floating_strike=True)
+    print(asian.price)

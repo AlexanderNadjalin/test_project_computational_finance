@@ -1,5 +1,5 @@
 # test_project_computational_finance
-Test project for The Python Quant Platinum Certificate Program.
+Test project for The Python Quant Platinum Certificate Program, January 2023.
 
 ### Instructions
 
